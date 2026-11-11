@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(حتى ما تنسى)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #bb86fc;
+            --primary-hover: #9965f4;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --danger-color: #cf6679;
+            --success-color: #03dac6;
+            --border-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Input Section */
+        .input-card {
+            background-color: var(--surface-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        textarea, input, select {
+            width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            grid-column: 1 / -1; /* يأخذ العرض كامل */
+        }
+
+        textarea:focus, input:focus, select:focus {
+            border-color: var(--primary-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: black; }
+
+        /* Controls Section */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filters select {
+            width: auto;
+            display: inline-block;
+        }
+
+        /* Table Section */
+        .table-responsive {
+            overflow-x: auto;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--primary-color);
+            white-space: nowrap;
+        }
+
+        .pre-wrap {
+            white-space: pre-wrap; /* يحافظ على التسلسل والأسطر */
+        }
+
+        .status-done {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        /* Focus Mode (وضع التنفيذ) */
+        #focusMode {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .focus-content {
+            background-color: var(--surface-color);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .focus-request-text {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        .focus-details {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .focus-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .focus-buttons button {
+            font-size: 1.2rem;
+            padding: 15px 30px;
+        }
+
+        .close-focus {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>(حتى ما تنسى)</h1>
+
+        <!-- قسم إضافة الطلب -->
+        <div class="input-card">
+            <textarea id="requestText" placeholder="اكتب طلبك هنا... (تقدر تكتب لستة أرقام وراح تنزل بنفس الترتيب)"></textarea>
+            
+            <div class="form-grid">
+                <select id="relation">
+                    <option value="" disabled selected>منو طلب منك؟</option>
+                    <option value="أخ">أخ</option>
+                    <option value="أب">أب</option>
+                    <option value="أخت">أخت</option>
+                    <option value="أم">أم</option>
+                    <option value="صديق">صديق</option>
+                    <option value="غريب">غريب</option>
+                </select>
+
+                <input type="text" id="personName" placeholder="اسم الشخص">
+
+                <select id="source" onchange="toggleSourceDetails()">
+                    <option value="" disabled selected>طريقة الطلب؟</option>
+                    <option value="لقاء شخصي">لقاء شخصي</option>
+                    <option value="مكالمة">مكالمة</option>
+                    <option value="رسالة">رسالة</option>
+                </select>
+
+                <select id="msgType" class="hidden">
+                    <option value="" disabled selected>نوع الرسالة</option>
+                    <option value="صوتية">صوتية</option>
+                    <option value="كتابية">كتابية</option>
+                </select>
+
+                <input type="text" id="appName" class="hidden" placeholder="اسم البرنامج (مثال: واتساب)">
+
+                <input type="text" id="notes" placeholder="ملاحظات إضافية...">
+            </div>
+            
+            <button onclick="addRequest()">إرسال الطلب</button>
+        </div>
+
+        <!-- الفلترة ووضع التنفيذ -->
+        <div class="controls">
+            <div class="filters">
+                <label>تصفية حسب:</label>
+                <select id="filterRelation" onchange="renderTable()">
+                    <option value="الكل">الكل</option>
+                    <option value="أخ">أخ</option>
+                    <option value="أب">أب</option>
+                    <option value="أخت">أخت</option>
+                    <option value="أم">أم</option>
+                    <option value="صديق">صديق</option>
+                    <option value="غريب">غريب</option>
+                </select>
+            </div>
+            <button class="btn-success" style="font-size: 1.3rem;" onclick="startFocusMode()">🚀 بدء تنفيذ الطلبات</button>
+        </div>
+
+        <!-- جدول عرض الطلبات -->
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الطلب</th>
+                        <th>الشخص</th>
+                        <th>المصدر</th>
+                        <th>التاريخ والوقت</th>
+                        <th>الملاحظات</th>
+                        <th>الحالة / إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- البيانات تنزل هنا عبر الجافاسكربت -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- واجهة وضع التنفيذ (Focus Mode) -->
+    <div id="focusMode" class="hidden">
+        <button class="close-focus" onclick="closeFocusMode()">❌ إنهاء التنفيذ</button>
+        <div class="focus-content">
+            <div id="focusRequestText" class="focus-request-text"></div>
+            <div id="focusDetails" class="focus-details"></div>
+            <div class="focus-buttons">
+                <button class="btn-success" onclick="focusMarkDone()">✅ تم الإكمال</button>
+                <button class="btn-danger" onclick="focusMarkUnavailable()">🚫 غير متوفر لسبب</button>
+                <button onclick="focusGoBack()">🔙 رجوع للسابق</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تحميل البيانات من LocalStorage حتى ما تضيع
+        let requests = JSON.parse(localStorage.getItem('myRequests')) || [];
+        let focusList = [];
+        let currentFocusIndex = 0;
+
+        // إظهار/إخفاء تفاصيل الرسالة بناءً على الاختيار
+        function toggleSourceDetails() {
+            const source = document.getElementById('source').value;
+            const msgType = document.getElementById('msgType');
+            const appName = document.getElementById('appName');
+            
+            if (source === 'رسالة') {
+                msgType.classList.remove('hidden');
+                appName.classList.remove('hidden');
+            } else {
+                msgType.classList.add('hidden');
+                appName.classList.add('hidden');
+                msgType.value = '';
+                appName.value = '';
+            }
+        }
+
+        // إضافة طلب جديد
+        function addRequest() {
+            const requestText = document.getElementById('requestText').value;
+            const relation = document.getElementById('relation').value;
+            const personName = document.getElementById('personName').value;
+            const source = document.getElementById('source').value;
+            const msgType = document.getElementById('msgType').value;
+            const appName = document.getElementById('appName').value;
+            const notes = document.getElementById('notes').value;
+
+            if (!requestText || !relation || !personName || !source) {
+                alert('يرجى ملء الحقول الأساسية (الطلب، الشخص، والمصدر)!');
+                return;
+            }
+
+            const now = new Date();
+            const date = now.toLocaleDateString('ar-IQ');
+            const time = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+
+            const newRequest = {
+                id: Date.now(),
+                text: requestText,
+                relation: relation,
+                name: personName,
+                source: source,
+                msgType: msgType,
+                appName: appName,
+                notes: notes,
+                date: date,
+                time: time,
+                status: 'pending', // pending, done, unavailable
+                reason: ''
+            };
+
+            requests.push(newRequest);
+            saveData();
+            renderTable();
+            
+            // تفريغ الحقول بعد الإضافة
+            document.getElementById('requestText').value = '';
+            document.getElementById('personName').value = '';
+            document.getElementById('notes').value = '';
+        }
+
+        // عرض الجدول
+        function renderTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            const filterValue = document.getElementById('filterRelation').value;
+            
+            const filteredRequests = requests.filter(req => {
+                return filterValue === 'الكل' ? true : req.relation === filterValue;
+            });
+
+            filteredRequests.forEach(req => {
+                const tr = document.createElement('tr');
+                if(req.status === 'done') tr.classList.add('status-done');
+                if(req.status === 'unavailable') tr.style.opacity = '0.6';
+
+                let sourceText = req.source;
+                if(req.source === 'رسالة' && req.appName) {
+                    sourceText += ` (${req.msgType} - ${req.appName})`;
+                }
+
+                let statusHtml = '';
+                if(req.status === 'pending') {
+                    statusHtml = `
+                        <input type="checkbox" onchange="markDone(${req.id})"> 
+                        <button class="btn-danger" style="padding: 5px 10px; font-size:0.9rem;" onclick="markUnavailable(${req.id})">غير متوفر</button>
+                    `;
+                } else if(req.status === 'done') {
+                    statusHtml = '✅ مكتمل';
+                } else if(req.status === 'unavailable') {
+                    statusHtml = `🚫 غير متوفر<br><small style="color:var(--danger-color)">السبب: ${req.reason}</small>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="pre-wrap">${req.text}</td>
+                    <td>${req.relation} - ${req.name}</td>
+                    <td>${sourceText}</td>
+                    <td><small>${req.date}<br>${req.time}</small></td>
+                    <td>${req.notes}</td>
+                    <td>${statusHtml}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function markDone(id) {
+            let req = requests.find(r => r.id === id);
+            if(req) req.status = 'done';
+            saveData();
+            renderTable();
+        }
+
+        function markUnavailable(id) {
+            let reason = prompt('شنو سبب عدم توفر الطلب؟');
+            if(reason !== null) {
+                let req = requests.find(r => r.id === id);
+                if(req) {
+                    req.status = 'unavailable';
+                    req.reason = reason;
+                }
+                saveData();
+                renderTable();
+            }
+        }
+
+        // ================= وضع التنفيذ (Focus Mode) =================
+        function startFocusMode() {
+            const filterValue = document.getElementById('filterRelation').value;
+            // نجلب الطلبات اللي مو مكتملة ولا ملغية، وحسب الفلتر
+            focusList = requests.filter(req => req.status === 'pending' && (filterValue === 'الكل' || req.relation === filterValue));
+            
+            if(focusList.length === 0) {
+                alert('ماكو طلبات قيد الانتظار حالياً لهذا الفلتر!');
+                return;
+            }
+
+            currentFocusIndex = 0;
+            document.getElementById('focusMode').classList.remove('hidden');
+            renderFocusItem();
+        }
+
+        function renderFocusItem() {
+            if (currentFocusIndex >= focusList.length) {
+                alert('عاشت ايدك! كملت كل الطلبات الحالية.');
+                closeFocusMode();
+                return;
+            }
+
+            const req = focusList[currentFocusIndex];
+            document.getElementById('focusRequestText').innerText = req.text;
+
+            let sourceText = req.source;
+            if(req.source === 'رسالة' && req.appName) {
+                sourceText += ` (${req.msgType} ببرنامج ${req.appName})`;
+            }
+
+            document.getElementById('focusDetails').innerHTML = `
+                <div><strong>الشخص:</strong> ${req.relation} (${req.name})</div>
+                <div><strong>تاريخ ووقت الطلب:</strong> ${req.date} - ${req.time}</div>
+                <div><strong>طريقة الاستلام:</strong> ${sourceText}</div>
+                <div><strong>ملاحظات:</strong> ${req.notes || 'لا يوجد'}</div>
+            `;
+        }
+
+        function focusMarkDone() {
+            let req = focusList[currentFocusIndex];
+            req.status = 'done';
+            saveData();
+            currentFocusIndex++;
+            renderFocusItem();
+        }
+
+        function focusMarkUnavailable() {
+            let reason = prompt('شنو سبب عدم توفر الطلب؟');
+            if(reason !== null) {
+                let req = focusList[currentFocusIndex];
+                req.status = 'unavailable';
+                req.reason = reason || 'بدون سبب';
+                saveData();
+                currentFocusIndex++;
+                renderFocusItem();
+            }
+        }
+
+        function focusGoBack() {
+            if (currentFocusIndex > 0) {
+                currentFocusIndex--;
+                // من نرجع، نرجع حالة الطلب إلى pending حتى نگدر نعدل عليه من جديد
+                focusList[currentFocusIndex].status = 'pending';
+                focusList[currentFocusIndex].reason = '';
+                saveData();
+                renderFocusItem();
+            } else {
+                alert('هذا هو أول طلب، ماكو طلب قبله!');
+            }
+        }
+
+        function closeFocusMode() {
+            document.getElementById('focusMode').classList.add('hidden');
+            renderTable();
+        }
+
+        function saveData() {
+            localStorage.setItem('myRequests', JSON.stringify(requests));
+        }
+
+        // تشغيل أولي
+        renderTable();
+    </script>
+</body>
+</html>
