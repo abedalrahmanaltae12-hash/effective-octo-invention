@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>(حتى ما تنسى)</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- مكتبات Firebase السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #121212;
@@ -43,6 +49,44 @@
             margin: 0 auto;
         }
 
+        /* شريط الحساب والمستخدم */
+        .user-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--surface-color);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* كارت تسجيل الدخول */
+        .auth-container {
+            max-width: 420px;
+            margin: 80px auto;
+            background-color: var(--surface-color);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .auth-container input {
+            margin-bottom: 15px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .auth-buttons button {
+            flex: 1;
+        }
+
         /* Input Section */
         .input-card {
             background-color: var(--surface-color);
@@ -73,7 +117,7 @@
         textarea {
             resize: vertical;
             min-height: 80px;
-            grid-column: 1 / -1; /* يأخذ العرض كامل */
+            grid-column: 1 / -1;
         }
 
         textarea:focus, input:focus, select:focus {
@@ -102,6 +146,7 @@
 
         .btn-danger { background-color: var(--danger-color); color: white; }
         .btn-success { background-color: var(--success-color); color: black; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
 
         /* Controls Section */
         .controls {
@@ -143,7 +188,7 @@
         }
 
         .pre-wrap {
-            white-space: pre-wrap; /* يحافظ على التسلسل والأسطر */
+            white-space: pre-wrap;
         }
 
         .status-done {
@@ -218,7 +263,29 @@
 </head>
 <body>
 
-    <div class="container">
+    <!-- 1. شاشة تسجيل الدخول وإنشاء الحساب -->
+    <div id="authScreen" class="auth-container">
+        <h2 style="color: var(--primary-color); margin-bottom: 10px;">(حتى ما تنسى)</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">سجل دخولك لحفظ واسترجاع طلباتك بأمان</p>
+        
+        <input type="email" id="authEmail" placeholder="البريد الإلكتروني">
+        <input type="password" id="authPassword" placeholder="كلمة المرور (6 خانات على الأقل)">
+        
+        <div class="auth-buttons">
+            <button onclick="handleLogin()">دخول</button>
+            <button class="btn-outline" onclick="handleRegister()">حساب جديد</button>
+        </div>
+    </div>
+
+    <!-- 2. واجهة التطبيق الرئيسية (تظهر بعد تسجيل الدخول فقط) -->
+    <div id="appScreen" class="container hidden">
+        
+        <!-- شريط المستخدم -->
+        <div class="user-bar">
+            <span>👤 الحساب: <strong id="userDisplayEmail" style="color: var(--primary-color);"></strong></span>
+            <button class="btn-danger" style="padding: 6px 15px; font-size: 0.9rem;" onclick="handleLogout()">تسجيل خروج</button>
+        </div>
+
         <h1>(حتى ما تنسى)</h1>
 
         <!-- قسم إضافة الطلب -->
@@ -311,12 +378,111 @@
     </div>
 
     <script>
-        // تحميل البيانات من LocalStorage حتى ما تضيع
-        let requests = JSON.parse(localStorage.getItem('myRequests')) || [];
+        // ==========================================
+        // ⚠️ مهم جداً: استبدل القيم أدناه بمعلومات مشروعك في Firebase
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "ضع_apiKey_الخاص_بك_هنا",
+            authDomain: "ضع_authDomain_هنا",
+            projectId: "ضع_projectId_هنا",
+            storageBucket: "ضع_storageBucket_هنا",
+            messagingSenderId: "ضع_messagingSenderId_هنا",
+            appId: "ضع_appId_هنا"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let requests = [];
         let focusList = [];
         let currentFocusIndex = 0;
 
-        // إظهار/إخفاء تفاصيل الرسالة بناءً على الاختيار
+        // متابعة حالة تسجيل الدخول تلقائياً
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('appScreen').classList.remove('hidden');
+                document.getElementById('userDisplayEmail').innerText = user.email;
+                loadUserData(user.uid);
+            } else {
+                currentUser = null;
+                requests = [];
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('appScreen').classList.add('hidden');
+            }
+        });
+
+        // 1. تسجيل حساب جديد
+        function handleRegister() {
+            const email = document.getElementById('authEmail').value.trim();
+            const pass = document.getElementById('authPassword').value;
+
+            if (!email || !pass) {
+                alert('يرجى كتابة البريد الإلكتروني وكلمة المرور!');
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, pass)
+                .catch(err => alert(translateError(err)));
+        }
+
+        // 2. تسجيل الدخول
+        function handleLogin() {
+            const email = document.getElementById('authEmail').value.trim();
+            const pass = document.getElementById('authPassword').value;
+
+            if (!email || !pass) {
+                alert('يرجى كتابة البريد الإلكتروني وكلمة المرور!');
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .catch(err => alert(translateError(err)));
+        }
+
+        // 3. تسجيل الخروج
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        // جلب بيانات هذا المستخدم فقط من Firestore
+        function loadUserData(uid) {
+            db.collection("users").doc(uid).get().then(doc => {
+                if (doc.exists && doc.data().requests) {
+                    requests = doc.data().requests;
+                } else {
+                    requests = [];
+                }
+                renderTable();
+            }).catch(err => {
+                console.error("خطأ في جلب البيانات:", err);
+            });
+        }
+
+        // حفظ بيانات المستخدم في مجلده السحابي المعزول
+        function saveData() {
+            if (!currentUser) return;
+            db.collection("users").doc(currentUser.uid).set({
+                requests: requests
+            }).catch(err => {
+                alert("حدث خطأ أثناء الحفظ السحابي: " + err.message);
+            });
+        }
+
+        // ترجمة أخطاء Firebase لرسائل مفهومة
+        function translateError(error) {
+            if (error.code === 'auth/email-already-in-use') return 'هذا البريد مسجل مسبقاً!';
+            if (error.code === 'auth/invalid-email') return 'صيغة البريد الإلكتروني غير صحيحة!';
+            if (error.code === 'auth/weak-password') return 'كلمة المرور يجب أن تكون 6 خانات أو أكثر!';
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') return 'البريد أو كلمة المرور غير صحيحة!';
+            return error.message;
+        }
+
+        // إظهار/إخفاء تفاصيل الرسالة
         function toggleSourceDetails() {
             const source = document.getElementById('source').value;
             const msgType = document.getElementById('msgType');
@@ -363,7 +529,7 @@
                 notes: notes,
                 date: date,
                 time: time,
-                status: 'pending', // pending, done, unavailable
+                status: 'pending',
                 reason: ''
             };
 
@@ -371,7 +537,6 @@
             saveData();
             renderTable();
             
-            // تفريغ الحقول بعد الإضافة
             document.getElementById('requestText').value = '';
             document.getElementById('personName').value = '';
             document.getElementById('notes').value = '';
@@ -445,7 +610,6 @@
         // ================= وضع التنفيذ (Focus Mode) =================
         function startFocusMode() {
             const filterValue = document.getElementById('filterRelation').value;
-            // نجلب الطلبات اللي مو مكتملة ولا ملغية، وحسب الفلتر
             focusList = requests.filter(req => req.status === 'pending' && (filterValue === 'الكل' || req.relation === filterValue));
             
             if(focusList.length === 0) {
@@ -504,7 +668,6 @@
         function focusGoBack() {
             if (currentFocusIndex > 0) {
                 currentFocusIndex--;
-                // من نرجع، نرجع حالة الطلب إلى pending حتى نگدر نعدل عليه من جديد
                 focusList[currentFocusIndex].status = 'pending';
                 focusList[currentFocusIndex].reason = '';
                 saveData();
@@ -518,13 +681,6 @@
             document.getElementById('focusMode').classList.add('hidden');
             renderTable();
         }
-
-        function saveData() {
-            localStorage.setItem('myRequests', JSON.stringify(requests));
-        }
-
-        // تشغيل أولي
-        renderTable();
     </script>
 </body>
 </html>
